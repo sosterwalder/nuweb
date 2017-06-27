@@ -685,7 +685,7 @@ int write_scraps(file, spelling, defs, global_indent, indent_chars,
              } else {
                /* Don't show newlines in embedded fragmants */
                fputs(". . .", file);
-               return;
+               return 0;
              }
           case '\t': {
                        if (tab_flag)
