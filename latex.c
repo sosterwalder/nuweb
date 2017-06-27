@@ -101,22 +101,36 @@ void write_tex(file_name, tex_name, sector)
                           fputs("}{} ", tex_file);
                           fprintf(tex_file, "\\verb%c\"%s\"%c\\nobreak\\ {\\footnotesize {", nw_char, name->spelling, nw_char);
                           write_single_scrap_ref(tex_file, scraps);
-                          fputs("}}$\\equiv$\n", tex_file);
+                          // Equiv in @o part
+                          if (name->defs->scrap == scraps) {
+                              fputs("}}$\\equiv$\n", tex_file);
+                          }
+                          else {
+                              fputs("}}$+\\equiv$\n", tex_file);
+                          }
                           /* Fill in the middle of the scrap environment */
                           {
-                            fputs("\\vspace{-1ex}\n\\begin{list}{}{} \\item\n", tex_file);
+                            // ORIG fputs("MIDDLE SCRAP OUTPUT\\vspace{-1ex}\n\\begin{list}{}{} \\item\n", tex_file);
+                            // MOD OK fputs("MIDDLE SCRAP OUTPUT\\vspace{-1ex}\n\\begin{lstlisting}\n", tex_file);
+                            fputs("\\vspace{-1ex}\n\\begin{pythoncode}\n", tex_file);
                             extra_scraps = 0;
                             copy_scrap(tex_file, TRUE, name);
-                            fputs("{\\NWsep}\n\\end{list}\n", tex_file);
+
+                            // | is the char to escape from lstlisting to LaTeX
+                            // mode. This needs to be added to the lst
+                            // environment in the preamble of the document.
+                            // ORIG fputs("{\\NWsep}\n\\end{lstlisting}\n", tex_file);
+                            // MOD OK fputs("|\\NWsep|\n\\end{lstlisting}\n", tex_file);
+                            fputs("|\\NWsep|\n\\end{pythoncode}\n", tex_file);
                           }
                           /* Begin the cross-reference environment */
                           {
-                            fputs("\\vspace{-1.5ex}\n", tex_file);
+                            fputs("\\vspace{1.5ex}\n", tex_file);
                             fputs("\\footnotesize\n", tex_file);
                             fputs("\\begin{list}{}{\\setlength{\\itemsep}{-\\parsep}",
                               tex_file);
                             fputs("\\setlength{\\itemindent}{-\\leftmargin}}\n", tex_file);}
-                          
+
                           if ( scrap_flag ) {
                             /* Write file defs */
                             {
@@ -211,22 +225,37 @@ void write_tex(file_name, tex_name, sector)
                           }
                           fputs("}\\nobreak\\ {\\footnotesize {", tex_file);
                           write_single_scrap_ref(tex_file, scraps);
-                          fputs("}}$\\,\\rangle\\equiv$\n", tex_file);
+                          // Equiv in @d part
+                          if (name->defs->scrap == scraps) {
+                              fputs("}}$\\,\\rangle\\equiv$\n", tex_file);
+                          }
+                          else {
+                              fputs("}}$\\,\\rangle+\\equiv$\n", tex_file);
+                          }
                           /* Fill in the middle of the scrap environment */
+                          // @d part
                           {
-                            fputs("\\vspace{-1ex}\n\\begin{list}{}{} \\item\n", tex_file);
+                            // ORIG fputs("MIDDLE SCRAP DEF\\vspace{-1ex}\n\\begin{list}{}{} \\item\n", tex_file);
+                            // MOD OK fputs("MIDDLE SCRAP DEF\\vspace{-1ex}\n\\begin{lstlisting}", tex_file);
+                            fputs("\\vspace{-1ex}\n\\begin{pythoncode}", tex_file);
                             extra_scraps = 0;
                             copy_scrap(tex_file, TRUE, name);
-                            fputs("{\\NWsep}\n\\end{list}\n", tex_file);
+
+                            // | is the char to escape from lstlisting to LaTeX
+                            // mode. This needs to be added to the lst
+                            // environment in the preamble of the document.
+                            // ORIG fputs("{\\NWsep}\n\\end{list}\n", tex_file);
+                            // MOD OK fputs("|\\NWsep|\n\\end{lstlisting}\n", tex_file);
+                            fputs("|\\NWsep|\n\\end{pythoncode}\n", tex_file);
                           }
                           /* Begin the cross-reference environment */
                           {
-                            fputs("\\vspace{-1.5ex}\n", tex_file);
+                            fputs("\\vspace{1.5ex}\n", tex_file);
                             fputs("\\footnotesize\n", tex_file);
                             fputs("\\begin{list}{}{\\setlength{\\itemsep}{-\\parsep}",
                               tex_file);
                             fputs("\\setlength{\\itemindent}{-\\leftmargin}}\n", tex_file);}
-                          
+
                           /* Write macro defs */
                           {
                             if (name->defs->next) {
@@ -465,7 +494,8 @@ static void print_scrap_numbers(tex_file, scraps)
 }
 static char *orig_delimit_scrap[3][5] = {
   /* {} mode: begin, end, insert nw_char, prefix, suffix */
-  { "\\verb@", "@", "@{\\tt @}\\verb@", "\\mbox{}", "\\\\" },
+  // ORIG { "\\verb@", "@", "@{\\normalfont \\fontfamily @}\\verb@", "\\mbox{}", "\\\\" },
+  { "\\verb@", "", "@{\\normalfont \\fontfamily @}\\verb@", "", "" },
   /* [] mode: begin, end, insert nw_char, prefix, suffix */
   { "", "", "@", "", "" },
   /* () mode: begin, end, insert nw_char, prefix, suffix */
@@ -487,12 +517,14 @@ void initialise_delimit_scrap_array() {
   /* replace verb by lstinline */
   if (listings_flag) {
     free(delimit_scrap[0][0]);
-    if((delimit_scrap[0][0]=strdup("\\lstinline@")) == NULL) {
+    // ORIG if((delimit_scrap[0][0]=strdup("\\lstinline@")) == NULL) {
+    if((delimit_scrap[0][0]=strdup("")) == NULL) {
       fprintf(stderr, "Not enough memory for string allocation\n");
       exit(EXIT_FAILURE);
     }
     free(delimit_scrap[0][2]);
-    if((delimit_scrap[0][2]=strdup("@{\\tt @}\\lstinline@")) == NULL) {
+    // ORIG if((delimit_scrap[0][2]=strdup("@{\\normalfont \\fontfamily @}\\lstinline@")) == NULL) {
+    if((delimit_scrap[0][2]=strdup("|\\normalfont{}\\fontfamily{}|")) == NULL) {
       fprintf(stderr, "Not enough memory for string allocation\n");
       exit(EXIT_FAILURE);
     }
@@ -556,7 +588,6 @@ static void copy_scrap(file, prefix, name)
                              fprintf(file, "\\hbox{\\sffamily\\slshape (Comment)}");
                              fputs(delimit_scrap[scrap_type][0], file);
                            }
-                           
                            break;
                  case 'x': {
                               /* Get label from */
@@ -566,12 +597,11 @@ static void copy_scrap(file, prefix, name)
                                  *p++ = c;
                               *p = '\0';
                               c = source_get();
-                              
                               write_label(label_name, file);
                            }
                            break;
                  case 'v': fputs(version_string, file);
-                           
+
                  case 's':
                            break;
                  case '+':
@@ -598,8 +628,10 @@ static void copy_scrap(file, prefix, name)
                              int narg = 0;
 
                              fputs(delimit_scrap[scrap_type][1],file);
-                             if (prefix)
+                             fputs("|", file);
+                             if (prefix) {
                                fputs("\\hbox{", file);
+                             }
                              fputs("$\\langle\\,${\\itshape ", file);
                              while (*p != '\000') {
                                if (*p == ARG_CHR) {
@@ -619,7 +651,6 @@ static void copy_scrap(file, prefix, name)
                              fputs("}\\nobreak\\ ", file);
                              if (scrap_name_has_parameters) {
                                /* Format macro parameters */
-                               
                                   char sep;
 
                                   sep = '(';
@@ -667,8 +698,10 @@ static void copy_scrap(file, prefix, name)
                                        command_name, name->spelling);
                              }
                              fputs("}$\\,\\rangle$", file);
-                             if (prefix)
+                             if (prefix) {
                                 fputs("}", file);
+                             }
+                             fputs("|", file);
                              fputs(delimit_scrap[scrap_type][0], file);
                            }
                            break;
