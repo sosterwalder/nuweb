@@ -625,7 +625,6 @@ int write_scraps(file, spelling, defs, global_indent, indent_chars,
               else
                 for (indent=0; indent<global_indent; indent++)
                   putc(indent_chars[indent], file);
-            
           }
           indent = 0;
           backup(2, &reader);
@@ -647,7 +646,6 @@ int write_scraps(file, spelling, defs, global_indent, indent_chars,
               else
                 for (indent=0; indent<global_indent; indent++)
                   putc(indent_chars[indent], file);
-            
           }
           indent = 0;
           backup(2, &reader);
@@ -676,7 +674,6 @@ int write_scraps(file, spelling, defs, global_indent, indent_chars,
                      else
                        for (indent=0; indent<global_indent; indent++)
                          putc(indent_chars[indent], file);
-                   
                  }
                  indent = 0;
                  backup(2, &reader);
@@ -887,39 +884,47 @@ int write_scraps(file, spelling, defs, global_indent, indent_chars,
                                  }
                                  else
                                  {
-                                   if (delayed_indent)
+                                   if (!defs->quoted && !tex_flag && !skip_flag)
                                    {
-                                     for (i = indent + global_indent; --i >= 0; )
-                                        putc(' ', file);
-                                   }
-
-                                   fprintf(file, "%c<",  nw_char);
-                                   if (name->sector == 0)
-                                      fputc('+', file);
-                                   /* Comment this macro use */
-                                   narg = 0;
-                                   while (*p != '\000') {
-                                     if (*p == ARG_CHR) {
-                                       if (q == NULL) {
-                                          if (defs->quoted)
-                                             fprintf(file, "%c'%s%c'", nw_char, inParams[narg], nw_char);
-                                          else
-                                             fprintf(file, "'%s'", inParams[narg]);
-                                       }
-                                       else {
-                                         comment_ArglistElement(file, q, defs->quoted);
-                                         q = q->next;
-                                       }
-                                       p++;
-                                       narg++;
+                                     if (delayed_indent)
+                                     {
+                                       for (i = indent + global_indent; --i >= 0; )
+                                          putc(' ', file);
                                      }
-                                     else
-                                        fputc(*p++, file);
+
+                                     fprintf(file, "%c<",  nw_char);
+                                     if (name->sector == 0)
+                                        fputc('+', file);
+                                     /* Comment this macro use */
+                                     narg = 0;
+                                     while (*p != '\000') {
+                                       if (*p == ARG_CHR) {
+                                         if (q == NULL) {
+                                            if (defs->quoted)
+                                               fprintf(file, "%c'%s%c'", nw_char, inParams[narg], nw_char);
+                                            else
+                                               fprintf(file, "'%s'", inParams[narg]);
+                                         }
+                                         else {
+                                           comment_ArglistElement(file, q, defs->quoted);
+                                           q = q->next;
+                                         }
+                                         p++;
+                                         narg++;
+                                       }
+                                       else
+                                          fputc(*p++, file);
+                                     }
+                                     fprintf(file, "%c>",  nw_char);
+                                     if (!defs->quoted && !tex_flag)
+                                       fprintf(stderr, "%s: macro never defined <%s>\n",
+                                             command_name, name->spelling);
                                    }
-                                   fprintf(file, "%c>",  nw_char);
-                                   if (!defs->quoted && !tex_flag)
-                                     fprintf(stderr, "%s: macro never defined <%s>\n",
-                                           command_name, name->spelling);
+                                   else if (!defs->quoted && !tex_flag && skip_flag)
+                                   {
+                                     fprintf(stderr, "%s: macro never defined <%s>, skipping..\n",
+                                             command_name, name->spelling);
+                                   }
                                  }
                                }
                                /* Insert debugging information if required */
@@ -1456,7 +1461,7 @@ static void build_gotos(tree)
         q->next = depths[1];
         depths[1] = q;
       }
-      while (c = *p++) {
+      while ((c = *p++)) {
         Goto_Node *new = goto_lookup(c, q);
         if (!new) {
           Move_Node *new_move = (Move_Node *) arena_getmem(sizeof(Move_Node));
