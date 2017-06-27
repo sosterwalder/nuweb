@@ -71,6 +71,7 @@ extern int compare_flag;  /* if FALSE, overwrite without comparison */
 extern int verbose_flag;  /* if TRUE, write progress information */
 extern int number_flag;   /* if TRUE, use a sequential numbering scheme */
 extern int scrap_flag;    /* if FALSE, don't print list of scraps */
+extern int skip_flag;     /* if TRUE, do not output undefined scraps */
 extern int dangling_flag;    /* if FALSE, don't print dangling identifiers */
 extern int xref_flag; /* If TRUE, print cross-references in scrap comments */
 extern int prepend_flag;  /* If TRUE, prepend a path to the output file names */

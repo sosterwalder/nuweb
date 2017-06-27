@@ -36,6 +36,8 @@ int main(argc, argv)
                       break;
             case 's': scrap_flag = FALSE;
                       break;
+            case 'S': skip_flag = TRUE;
+                      break;
             case 't': tex_flag = FALSE;
                       break;
             case 'v': verbose_flag = TRUE;

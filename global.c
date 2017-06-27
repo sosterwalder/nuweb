@@ -23,6 +23,7 @@ int compare_flag = TRUE;
 int verbose_flag = FALSE;
 int number_flag = FALSE;
 int scrap_flag = TRUE;
+int skip_flag = FALSE;
 int dangling_flag = FALSE;
 int xref_flag = FALSE;
 int prepend_flag = FALSE;
