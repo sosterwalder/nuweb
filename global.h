@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <locale.h>
+#include <errno.h>
 
 /* Type declarations */
 #ifndef FALSE

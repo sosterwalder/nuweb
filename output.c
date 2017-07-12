@@ -70,8 +70,8 @@ void write_files(files)
               /* Rename the temporary file to the target */
               
               if (0 != rename(temp_name, real_name)) {
-                fprintf(stderr, "%s: can't rename output file to %s\n",
-                        command_name, real_name);
+                fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
+                        command_name, real_name, strerror(errno));
               }
               
             }
@@ -80,8 +80,8 @@ void write_files(files)
             /* Rename the temporary file to the target */
             
             if (0 != rename(temp_name, real_name)) {
-              fprintf(stderr, "%s: can't rename output file to %s\n",
-                      command_name, real_name);
+              fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
+                      command_name, real_name, strerror(errno));
             }
             
         }
@@ -90,8 +90,8 @@ void write_files(files)
         /* Rename the temporary file to the target */
         
         if (0 != rename(temp_name, real_name)) {
-          fprintf(stderr, "%s: can't rename output file to %s\n",
-                  command_name, real_name);
+          fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
+                  command_name, real_name, strerror(errno));
         }
         
       }
