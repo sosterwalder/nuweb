@@ -8,6 +8,8 @@
 #include <signal.h>
 #include <locale.h>
 #include <errno.h>
+#include <libgen.h>
+#include <sys/stat.h>
 
 /* Type declarations */
 #ifndef FALSE

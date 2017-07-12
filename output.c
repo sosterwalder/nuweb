@@ -1,4 +1,47 @@
 #include "global.h"
+
+/*
+ * Function with behaviour like `mkdir -p'
+ * http://niallohiggins.com/2009/01/08/mkpath-mkdir-p-alike-in-c-for-unix/
+ *
+ */
+int mkpath(const char *s, mode_t mode) {
+    char *q, *r = NULL, *path = NULL, *up = NULL;
+    int rv;
+
+    rv = -1;
+    if (strcmp(s, ".") == 0 || strcmp(s, "/") == 0)
+        return (0);
+
+    if ((path = strdup(s)) == NULL)
+        exit(1);
+
+    if ((q = strdup(s)) == NULL)
+        exit(1);
+
+    if ((r = dirname(q)) == NULL)
+        goto out;
+
+    if ((up = strdup(r)) == NULL)
+        exit(1);
+
+    if ((mkpath(up, mode) == -1) && (errno != EEXIST))
+        goto out;
+
+    if ((mkdir(path, mode) == -1) && (errno != EEXIST))
+        rv = -1;
+    else
+        rv = 0;
+
+out:
+    if (up != NULL) {
+        free(up);
+    }
+    free(q);
+    free(path);
+    return (rv);
+}
+
 void write_files(files)
      Name *files;
 {
@@ -14,7 +57,6 @@ void write_files(files)
       FILE *temp_file;
 
       /* Find a free temporary file */
-      
       for( temp_name_count = 0; temp_name_count < 10000; temp_name_count++) {
         sprintf(temp_name,"%s%snw%06d", dirpath, path_sep, temp_name_count);
       #ifdef O_EXCL
@@ -38,7 +80,6 @@ void write_files(files)
                 command_name, temp_name);
         exit(-1);
       }
-      
 
       sprintf(real_name, "%s%s%s", dirpath, path_sep, files->spelling);
       if (verbose_flag)
@@ -76,14 +117,22 @@ void write_files(files)
               
             }
           }
-          else
+          else {
+            struct stat sb;
+            char* real_path = dirname(real_name);
+
+            /* Check if directory exists */
+            if (!(stat(real_path, &sb) == 0 && S_ISDIR(sb.st_mode))) {
+                /* If not, create recursively */
+                mkpath(real_path, 0755);
+                fprintf(stdout, "Directory %s does not exist, creating..\n", dirname(real_name));
+            }
             /* Rename the temporary file to the target */
-            
             if (0 != rename(temp_name, real_name)) {
               fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
                       command_name, real_name, strerror(errno));
             }
-            
+          }
         }
       else {
         remove(real_name);
