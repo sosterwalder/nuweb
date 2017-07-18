@@ -51,6 +51,7 @@ void write_files(files)
     {
       static char temp_name[FILENAME_MAX];
       static char real_name[FILENAME_MAX];
+      static char real_dir[FILENAME_MAX];
       static int temp_name_count = 0;
       char indent_chars[MAX_INDENT];
       int temp_file_fd;
@@ -82,69 +83,86 @@ void write_files(files)
       }
 
       sprintf(real_name, "%s%s%s", dirpath, path_sep, files->spelling);
-      if (verbose_flag)
-        fprintf(stderr, "writing %s [%s]\n", files->spelling, temp_name);
+      if (verbose_flag) {
+          fprintf(stderr, "writing %s [%s]\n", files->spelling, temp_name);
+      }
       write_scraps(temp_file, files->spelling, files->defs, 0, indent_chars,
                    files->debug_flag, files->tab_flag, files->indent_flag,
                    files->comment_flag, NULL, NULL, 0, files->spelling);
       fclose(temp_file);
 
       /* Move the temporary file to the target, if required */
-      
-      if (compare_flag)
-        /* Compare the temp file and the old file */
-        {
+      if (compare_flag) {
+          /* Compare the temp file and the old file */
           FILE *old_file = fopen(real_name, "r");
           if (old_file) {
-            int x, y;
-            temp_file = fopen(temp_name, "r");
-            do {
-              x = getc(old_file);
-              y = getc(temp_file);
-            } while (x == y && x != EOF);
-            fclose(old_file);
-            fclose(temp_file);
-            if (x == y)
-              remove(temp_name);
-            else {
-              remove(real_name);
-              /* Rename the temporary file to the target */
-              
-              if (0 != rename(temp_name, real_name)) {
-                fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
-                        command_name, real_name, strerror(errno));
+              int x, y;
+              temp_file = fopen(temp_name, "r");
+              do {
+                  x = getc(old_file);
+                  y = getc(temp_file);
+              } while (x == y && x != EOF);
+              fclose(old_file);
+              fclose(temp_file);
+              if (x == y) {
+                  remove(temp_name);
+                  fprintf(stdout, "%s: %s already exists, removed temp file %s\n", command_name, real_name, temp_name);
               }
-              
-            }
+              else {
+                  remove(real_name);
+                  /* Rename the temporary file to the target */
+                  if (0 != rename(temp_name, real_name)) {
+                      fprintf(stderr, "%s: can't rename output file to %s (%s, %d)\n",
+                              command_name, real_name, strerror(errno), __LINE__);
+                  }
+                  else {
+                      fprintf(stdout, "%s: Renamed %s to %s\n", command_name, temp_name, real_name);
+                  }
+              }
+          }
+          /* No comparision */
+          else {
+              struct stat sb;
+              strncpy(real_dir, real_name, strlen(real_name));
+              char* real_path = dirname(real_dir);
+              DIR* dir = opendir(real_path);
+
+              /* Check if directory exists */
+              if (dir) {
+                  fprintf(stdout, "Directory %s already exists\n", real_dir);
+                  closedir(dir);
+              }
+              else if (ENOENT == errno) {
+                  /* If not, create recursively */
+                  mkpath(real_path, 0755);
+                  fprintf(stdout, "Directory %s does not exist, creating..\n", real_dir);
+              }
+              else {
+                  fprintf(stderr, "%s: can't create directory %s\n",
+                          command_name, real_dir);
+                  exit(-1);
+              }
+              /* Check if real_name is actually a regular file and not a directory */
+              if (0 != rename(temp_name, real_name)) {
+                  fprintf(stderr, "%s: can't rename output file %s to %s (%s, %d)\n",
+                          command_name, temp_name, real_name, strerror(errno), __LINE__);
+              }
+              else {
+                  fprintf(stdout, "%s: Renamed %s to %s\n", command_name, temp_name, real_name);
+              }
+          }
+      }
+      else {
+          remove(real_name);
+          /* Rename the temporary file to the target */
+          if (0 != rename(temp_name, real_name)) {
+              fprintf(stderr, "%s: can't rename output file to %s (%s, %d)\n",
+                      command_name, real_name, strerror(errno), __LINE__);
           }
           else {
-            struct stat sb;
-            char* real_path = dirname(real_name);
-
-            /* Check if directory exists */
-            if (!(stat(real_path, &sb) == 0 && S_ISDIR(sb.st_mode))) {
-                /* If not, create recursively */
-                mkpath(real_path, 0755);
-                fprintf(stdout, "Directory %s does not exist, creating..\n", dirname(real_name));
-            }
-            /* Rename the temporary file to the target */
-            if (0 != rename(temp_name, real_name)) {
-              fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
-                      command_name, real_name, strerror(errno));
-            }
+              fprintf(stdout, "%s: Renamed %s to %s\n", command_name, temp_name, real_name);
           }
-        }
-      else {
-        remove(real_name);
-        /* Rename the temporary file to the target */
-        
-        if (0 != rename(temp_name, real_name)) {
-          fprintf(stderr, "%s: can't rename output file to %s (%s)\n",
-                  command_name, real_name, strerror(errno));
-        }
-        
       }
-      
     }
     files = files->rlink;
   }

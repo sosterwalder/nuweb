@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 /* Type declarations */
 #ifndef FALSE
